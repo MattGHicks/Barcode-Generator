@@ -1,0 +1,32 @@
+services:
+  barcode-webapp:
+    build: .
+    container_name: barcode-generator
+    ports:
+      - "3002:3000"
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - homelab_homelab
+      - coolify
+    labels:
+      - homepage.group=Tools
+      - homepage.name=Barcode Generator
+      - homepage.icon=barcode.png
+      - homepage.href=https://barcode.mght630.com
+      - homepage.description=Code39 Barcode Generator with AI
+      - traefik.enable=true
+      - traefik.http.routers.barcode.rule=Host(`barcode.mght630.com`)
+      - traefik.http.routers.barcode.entrypoints=https
+      - traefik.http.routers.barcode.tls=true
+      - traefik.http.routers.barcode.tls.certresolver=letsencrypt
+      - traefik.http.services.barcode.loadbalancer.server.port=3000
+
+networks:
+  homelab_homelab:
+    external: true
+  coolify:
+    external: true

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366F1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#grad)"/>
+
+  <!-- Title -->
+  <text x="600" y="150" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="white" text-anchor="middle">Code39 Barcode Generator</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="220" font-family="Arial, sans-serif" font-size="32" fill="#E0E7FF" text-anchor="middle">AI-Powered Barcode Generation with Claude</text>
+
+  <!-- Large barcode visualization -->
+  <g transform="translate(200, 280)">
+    <rect x="0" y="0" width="30" height="200" fill="white"/>
+    <rect x="40" y="0" width="20" height="200" fill="white"/>
+    <rect x="70" y="0" width="35" height="200" fill="white"/>
+    <rect x="115" y="0" width="20" height="200" fill="white"/>
+    <rect x="145" y="0" width="30" height="200" fill="white"/>
+    <rect x="185" y="0" width="20" height="200" fill="white"/>
+    <rect x="215" y="0" width="40" height="200" fill="white"/>
+    <rect x="265" y="0" width="20" height="200" fill="white"/>
+    <rect x="295" y="0" width="30" height="200" fill="white"/>
+    <rect x="335" y="0" width="35" height="200" fill="white"/>
+    <rect x="380" y="0" width="20" height="200" fill="white"/>
+    <rect x="410" y="0" width="30" height="200" fill="white"/>
+    <rect x="450" y="0" width="20" height="200" fill="white"/>
+    <rect x="480" y="0" width="40" height="200" fill="white"/>
+    <rect x="530" y="0" width="20" height="200" fill="white"/>
+    <rect x="560" y="0" width="30" height="200" fill="white"/>
+    <rect x="600" y="0" width="35" height="200" fill="white"/>
+    <rect x="645" y="0" width="20" height="200" fill="white"/>
+    <rect x="675" y="0" width="30" height="200" fill="white"/>
+    <rect x="715" y="0" width="20" height="200" fill="white"/>
+    <rect x="745" y="0" width="40" height="200" fill="white"/>
+    <rect x="795" y="0" width="20" height="200" fill="white"/>
+  </g>
+
+  <!-- URL -->
+  <text x="600" y="570" font-family="Arial, sans-serif" font-size="28" fill="#C7D2FE" text-anchor="middle">barcode.mght630.com</text>
+
+  <!-- By Matt Hicks -->
+  <text x="600" y="610" font-family="Arial, sans-serif" font-size="20" fill="#E0E7FF" text-anchor="middle">by Matt Hicks ❤️</text>
+</svg>
