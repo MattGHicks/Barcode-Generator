@@ -1,15 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
+import { MAX_CODES, MAX_UPLOAD_BYTES, rateLimit, tooLarge } from '@/lib/security';
+
+const ALLOWED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, 'upload', 20, 60_000) || tooLarge(request, MAX_UPLOAD_BYTES + 64 * 1024);
+  if (limited) return limited;
+
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file');
 
-    if (!file) {
+    if (!file || typeof file === 'string') {
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
+      );
+    }
+
+    const lowerName = file.name.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.some((ext) => lowerName.endsWith(ext))) {
+      return NextResponse.json(
+        { error: 'Please upload a .xlsx, .xls, or .csv file' },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: 'File too large (max 2 MB)' },
+        { status: 413 }
       );
     }
 
@@ -18,7 +39,7 @@ export async function POST(request: NextRequest) {
     const data = new Uint8Array(arrayBuffer);
 
     // Parse workbook
-    const workbook = XLSX.read(data, { type: 'array' });
+    const workbook = XLSX.read(data, { type: 'array', sheets: 0, cellFormula: false, cellHTML: false, bookVBA: false });
 
     // Get first sheet
     const sheetName = workbook.SheetNames[0];
@@ -38,7 +59,7 @@ export async function POST(request: NextRequest) {
     const codes: string[] = [];
     for (const row of rows) {
       if (row && row[0] !== undefined && row[0] !== null && row[0] !== '') {
-        const value = String(row[0]).trim();
+        const value = String(row[0]).trim().slice(0, 256);
         // Skip if it looks like a header (common header names)
         if (value && !isHeaderRow(value)) {
           codes.push(value);
@@ -53,9 +74,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (codes.length > 1000) {
+    if (codes.length > MAX_CODES) {
       return NextResponse.json(
-        { error: `Too many codes (${codes.length}). Maximum is 1000.` },
+        { error: `Too many codes (${codes.length}). Maximum is ${MAX_CODES}.` },
         { status: 400 }
       );
     }
@@ -63,7 +84,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       codes,
       count: codes.length,
-      fileName: file.name,
+      fileName: file.name.slice(0, 200),
     });
   } catch (error) {
     console.error('File upload error:', error);

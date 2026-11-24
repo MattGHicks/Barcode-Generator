@@ -1,29 +1,35 @@
-# Use Node.js LTS version
-FROM node:20-alpine
+# syntax=docker/dockerfile:1
+# Hardened multi-stage build (post-2026-09-20 incident): patched Next.js,
+# standalone output, no dev deps or npm in the runtime image, non-root user.
 
-# Set working directory
+FROM node:22-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
-# Copy package files
-COPY package*.json ./
-
-# Install all dependencies (including dev dependencies needed for build)
-RUN npm ci
-
-# Copy application files
+FROM node:22-alpine AS builder
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build the Next.js application
 RUN npm run build
 
-# Remove dev dependencies after build
-RUN npm prune --production
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 
-# Expose port 3000
+# Drop npm/npx/corepack from the runtime image — nothing needs them at runtime
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+      /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
+
+COPY --from=builder --chown=root:root /app/public ./public
+COPY --from=builder --chown=root:root /app/.next/standalone ./
+COPY --from=builder --chown=root:root /app/.next/static ./.next/static
+
+# App files are root-owned and read-only to the runtime user
+USER node
 EXPOSE 3000
-
-# Set environment to production
-ENV NODE_ENV=production
-
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

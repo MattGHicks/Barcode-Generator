@@ -1,20 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { rateLimit, tooLarge } from '@/lib/security';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const MAX_DESCRIPTION = 500;
 
 export async function POST(request: NextRequest) {
-  try {
-    const { description } = await request.json();
+  const limited = rateLimit(request, 'ai-assist', 5, 60_000) || tooLarge(request, 8 * 1024);
+  if (limited) return limited;
 
-    if (!description || description.trim().length === 0) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json(
+      { error: 'AI assistance is not enabled. You can still use the manual form below to generate barcodes!' },
+      { status: 503 }
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const description = typeof body?.description === 'string' ? body.description.trim() : '';
+
+    if (!description) {
       return NextResponse.json(
         { error: 'Description is required' },
         { status: 400 }
       );
     }
+    if (description.length > MAX_DESCRIPTION) {
+      return NextResponse.json(
+        { error: `Description is too long (max ${MAX_DESCRIPTION} characters)` },
+        { status: 400 }
+      );
+    }
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -50,7 +68,21 @@ Examples:
     }
 
     // Parse Claude's JSON response
-    const config = JSON.parse(content.text);
+    const raw = JSON.parse(content.text);
+
+    // Only pass through the expected fields, with sane bounds
+    const num = (v: unknown, d: number, min: number, max: number) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : d;
+    };
+    const config = {
+      prefix: String(raw?.prefix ?? '').toUpperCase().replace(/[^0-9A-Z \-.$/+%]/g, '').slice(0, 32),
+      startNumber: Math.round(num(raw?.startNumber, 1, 0, 99_999_999)),
+      count: Math.round(num(raw?.count, 10, 1, 1000)),
+      pageWidth: num(raw?.pageWidth, 1.5, 0.5, 8.5),
+      pageHeight: num(raw?.pageHeight, 1.0, 0.5, 11),
+      reasoning: String(raw?.reasoning ?? '').slice(0, 500),
+    };
 
     return NextResponse.json(config);
   } catch (error: any) {

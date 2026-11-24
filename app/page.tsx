@@ -74,11 +74,11 @@ export default function Home() {
         body: JSON.stringify({ description: formData.description }),
       });
 
-      if (!response.ok) {
-        throw new Error('AI assistance failed');
-      }
+      const config = await response.json().catch(() => ({}));
 
-      const config = await response.json();
+      if (!response.ok) {
+        throw new Error(config.error || 'AI assistance failed');
+      }
 
       setFormData({
         ...formData,
@@ -91,7 +91,7 @@ export default function Home() {
 
       setAiReasoning(config.reasoning || 'Settings updated by AI');
     } catch (err) {
-      setError('Failed to get AI assistance. Make sure ANTHROPIC_API_KEY is set.');
+      setError(err instanceof Error ? err.message : 'AI assistance is unavailable right now.');
     } finally {
       setAiLoading(false);
     }
